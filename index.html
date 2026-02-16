@@ -41,9 +41,15 @@
             background-color: #e5e7eb;
         }
 
+        .currency-row {
+            transition: all 0.2s ease;
+            border: 2px solid transparent;
+        }
+
         .currency-row.active {
-            background-color: #eff6ff;
-            border-left: 4px solid #2563eb;
+            background-color: #ffffff;
+            border-color: #2563eb;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
         }
 
         /* Custom Scrollbar */
@@ -64,15 +70,15 @@
     <!-- Chosen Palette: Warm Sand & Professional Blue -->
     <!-- Application Structure Plan: 
         1. Header: Quick branding and status.
-        2. Live Converter Section: Re-ordered to place PHP at the top and KRW second. Removed USD. 
-        3. Market Trends Section: Simplified to show the PHP/KRW trend analysis.
-        4. Information Architecture: Designed to facilitate immediate conversion between Peso and Won, providing analytical context below.
-        5. Reset Logic: The state is reset to '0' on window load, ensuring a fresh entry every time.
+        2. Live Converter Section: Two-way interactive list. PHP and KRW now both use integer formatting.
+        3. Market Trends Section: Provides context for the PHP/KRW pairing with integer-based data visualization.
+        4. Information Architecture: Designed for clean, simplified consumption of exchange data without decimal noise.
+        5. State Management: Syncs input and maintains integer-only display across all components.
     -->
     <!-- Visualization & Content Choices: 
-        - Currency Rows -> PHP (Top), KRW (Bottom) -> Goal: Direct Peer Comparison -> Responsive List.
-        - Exchange Trends -> PHP/KRW Trend -> Goal: Trend Analysis -> Chart.js Line Chart.
-        - Key Takeaways -> Focused on PHP/KRW market insights.
+        - Currency Rows -> Selectable List -> Bi-directional Input -> Real-time conversion -> Integer Display.
+        - Exchange Trends -> Line Chart -> Goal: Trend Analysis -> Rounded Tooltips.
+        - Key Takeaways -> Informational footer blocks.
         - CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. 
     -->
 
@@ -90,37 +96,37 @@
 
         <main class="grid grid-cols-1 lg:grid-cols-12 gap-8">
             
-            <!-- 리포트 섹션 1: 실시간 환율 계산기 -->
+            <!-- 리포트 섹션 1: 실시간 양방향 계산기 -->
             <section class="lg:col-span-5 space-y-6">
                 <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
-                    <h2 class="text-lg font-bold mb-4 px-2">실시간 변환 대시보드</h2>
+                    <h2 class="text-lg font-bold mb-4 px-2">양방향 변환 대시보드</h2>
                     <p class="text-sm text-gray-500 mb-6 px-2 leading-relaxed">
-                        필리핀 페소(PHP)와 한국 원화(KRW) 간의 환율을 즉시 계산합니다. 원화는 정수로 표시되며, 페소는 소수점 두 자리까지 정밀하게 계산됩니다.
+                        가독성을 높이기 위해 모든 환율 결과에서 소수점을 제거했습니다. 정수 단위로 빠르고 간편하게 환율을 계산해 보세요.
                     </p>
 
                     <!-- 통화 리스트 -->
-                    <div class="space-y-1 mb-8" id="currency-list">
-                        <!-- PHP Row (Top) -->
-                        <div class="currency-row active flex items-center justify-between p-4 rounded-2xl cursor-pointer" data-code="PHP">
+                    <div class="space-y-3 mb-8" id="currency-list">
+                        <!-- PHP Row -->
+                        <div class="currency-row active flex items-center justify-between p-4 rounded-2xl cursor-pointer bg-gray-50" data-code="PHP">
                             <div class="flex items-center space-x-3">
                                 <span class="text-2xl">🇵🇭</span>
                                 <span class="font-bold text-gray-700">PHP</span>
-                                <span class="text-gray-400">▼</span>
+                                <span class="text-blue-600 text-xs font-bold active-label">입력 중</span>
                             </div>
                             <div class="text-right">
-                                <div class="text-xl font-bold tracking-tight" id="display-PHP">0.00</div>
+                                <div class="text-xl font-bold tracking-tight text-blue-600" id="display-PHP">0</div>
                             </div>
                         </div>
 
-                        <!-- KRW Row (Second) -->
-                        <div class="currency-row flex items-center justify-between p-4 rounded-2xl cursor-pointer" data-code="KRW">
+                        <!-- KRW Row -->
+                        <div class="currency-row flex items-center justify-between p-4 rounded-2xl cursor-pointer bg-gray-50" data-code="KRW">
                             <div class="flex items-center space-x-3">
                                 <span class="text-2xl">🇰🇷</span>
                                 <span class="font-bold text-gray-700">KRW</span>
-                                <span class="text-gray-400">▼</span>
+                                <span class="text-blue-600 text-xs font-bold active-label hidden">입력 중</span>
                             </div>
                             <div class="text-right">
-                                <div class="text-xl font-bold tracking-tight" id="display-KRW">0</div>
+                                <div class="text-xl font-bold tracking-tight text-gray-700" id="display-KRW">0</div>
                             </div>
                         </div>
                     </div>
@@ -144,7 +150,8 @@
                         
                         <div class="keypad-button bg-blue-50 text-blue-600 font-bold p-4 rounded-xl text-center cursor-pointer text-xl" data-key="-">−</div>
                         <div class="keypad-button bg-gray-50 text-gray-700 font-medium p-4 rounded-xl text-center cursor-pointer text-xl" data-key="0">0</div>
-                        <div class="keypad-button bg-gray-50 text-gray-700 font-medium p-4 rounded-xl text-center cursor-pointer text-xl font-black" data-key=".">.</div>
+                        <!-- Decimal point kept as a placeholder but logic ensures integer results -->
+                        <div class="keypad-button bg-gray-50 text-gray-300 font-medium p-4 rounded-xl text-center cursor-default text-xl font-black" data-key=".">.</div>
                         <div class="keypad-button bg-gray-100 text-gray-600 font-bold p-4 rounded-xl text-center cursor-pointer text-xl" data-key="DEL">⌫</div>
                     </div>
                 </div>
@@ -155,7 +162,7 @@
                 <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 h-full flex flex-col">
                     <h2 class="text-xl font-bold mb-4">PHP/KRW 시장 동향 분석</h2>
                     <p class="text-sm text-gray-500 mb-8 leading-relaxed">
-                        최근 7일간의 필리핀 페소 대비 원화 환율 변동 추이를 확인하세요. 시장 분석 데이터를 통해 환전 및 결제 시점을 전략적으로 선택할 수 있습니다.
+                        시장의 흐름을 직관적으로 파악할 수 있도록 차트 내 수치 데이터도 정수 단위로 최적화되었습니다.
                     </p>
 
                     <div class="flex-grow flex flex-col justify-center">
@@ -178,7 +185,7 @@
                     <div class="mt-6 p-5 border border-blue-50 rounded-2xl bg-blue-50/30">
                         <h4 class="text-sm font-bold text-blue-800 mb-2 font-medium">💡 전문가 리포트</h4>
                         <p class="text-sm text-blue-700/80 leading-relaxed" id="insight-text">
-                            페소화는 필리핀 내수 활성화 기대감에 따라 원화 대비 견조한 흐름을 유지하고 있습니다. 여행 및 비즈니스 목적의 환전 시 현재의 박스권 흐름을 참고하십시오.
+                            페소화는 필리핀 내수 활성화 기대감에 따라 원화 대비 견조한 흐름을 유지하고 있습니다. 여행 및 비즈니스 목적의 환전 시 현재의 흐름을 참고하십시오.
                         </p>
                     </div>
                 </div>
@@ -193,10 +200,10 @@
     </div>
 
     <script>
-        // State Management - Resets every time page is accessed
+        // State Management
         const state = {
             activeCurrency: 'PHP',
-            inputValue: '0', // Start with 0 as requested
+            inputValue: '0', 
             baseToKRW: {
                 PHP: 24.9075,
                 KRW: 1
@@ -216,18 +223,38 @@
             // Convert current input to KRW first
             const amountInKRW = currentAmount * state.baseToKRW[fromCode];
 
-            // Update all displays
+            // Update all displays to integers (precision: 0)
             Object.keys(displays).forEach(code => {
                 const result = amountInKRW / state.baseToKRW[code];
                 
-                // KRW is integer, PHP shows 2 decimal points
-                const precision = code === 'KRW' ? 0 : 2;
+                // All currencies now integer
+                const precision = 0;
                 
                 const formatter = new Intl.NumberFormat('ko-KR', {
                     minimumFractionDigits: precision,
                     maximumFractionDigits: precision
                 });
-                displays[code].textContent = formatter.format(result);
+                displays[code].textContent = formatter.format(Math.round(result));
+            });
+        };
+
+        const updateVisualActiveState = () => {
+            document.querySelectorAll('.currency-row').forEach(row => {
+                const code = row.getAttribute('data-code');
+                const label = row.querySelector('.active-label');
+                const display = row.querySelector('div[id^="display-"]');
+
+                if (code === state.activeCurrency) {
+                    row.classList.add('active');
+                    label.classList.remove('hidden');
+                    display.classList.add('text-blue-600');
+                    display.classList.remove('text-gray-700');
+                } else {
+                    row.classList.remove('active');
+                    label.classList.add('hidden');
+                    display.classList.remove('text-blue-600');
+                    display.classList.add('text-gray-700');
+                }
             });
         };
 
@@ -235,17 +262,13 @@
         document.querySelectorAll('.keypad-button').forEach(btn => {
             btn.addEventListener('click', () => {
                 const key = btn.getAttribute('data-key');
-                if (!key) return;
+                if (!key || key === '.') return; // Ignore decimal point logic as we want integers
 
                 if (key === 'C') {
                     state.inputValue = '0';
                 } else if (key === 'DEL') {
                     state.inputValue = state.inputValue.toString().slice(0, -1) || '0';
                     if (state.inputValue === '') state.inputValue = '0';
-                } else if (key === '.') {
-                    if (!state.inputValue.toString().includes('.')) {
-                        state.inputValue += '.';
-                    }
                 } else if (!isNaN(key)) {
                     if (state.inputValue === '0') {
                         state.inputValue = key;
@@ -261,13 +284,14 @@
         // Row Selection
         document.querySelectorAll('.currency-row').forEach(row => {
             row.addEventListener('click', () => {
-                document.querySelectorAll('.currency-row').forEach(r => r.classList.remove('active'));
-                row.classList.add('active');
                 state.activeCurrency = row.getAttribute('data-code');
                 
-                // Set input to current row value for seamless editing
+                // Set input to current row value (stripped of commas)
                 const rawVal = displays[state.activeCurrency].textContent.replace(/,/g, '');
                 state.inputValue = rawVal;
+                
+                updateVisualActiveState();
+                updateCalculations();
             });
         });
 
@@ -292,8 +316,8 @@
             const maxVal = Math.max(...config.data);
             const minVal = Math.min(...config.data);
             
-            document.getElementById('stat-high').textContent = maxVal.toLocaleString() + ' ₩';
-            document.getElementById('stat-low').textContent = minVal.toLocaleString() + ' ₩';
+            document.getElementById('stat-high').textContent = Math.round(maxVal).toLocaleString() + ' ₩';
+            document.getElementById('stat-low').textContent = Math.round(minVal).toLocaleString() + ' ₩';
 
             currentChart = new Chart(ctx, {
                 type: 'line',
@@ -326,7 +350,8 @@
                             borderColor: '#e5e7eb',
                             borderWidth: 1,
                             callbacks: {
-                                label: (context) => ` 환율: ${context.parsed.y.toLocaleString()} ₩`
+                                // Round tooltip values
+                                label: (context) => ` 환율: ${Math.round(context.parsed.y).toLocaleString()} ₩`
                             }
                         }
                     },
@@ -336,7 +361,8 @@
                             grid: { color: '#f3f4f6' },
                             ticks: { 
                                 color: '#9ca3af',
-                                font: { size: 10 }
+                                font: { size: 10 },
+                                callback: (value) => Math.round(value).toLocaleString()
                             }
                         },
                         x: {
@@ -351,10 +377,10 @@
             });
         };
 
-        // Initialize - Reset logic implemented here
+        // Initialize
         window.onload = () => {
-            // Explicitly set value to '0' on entry
             state.inputValue = '0';
+            updateVisualActiveState();
             updateCalculations();
             initChart();
         };
