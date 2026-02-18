@@ -52,6 +52,11 @@
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
         }
 
+        .nav-tab.active {
+            color: #2563eb;
+            border-bottom: 2px solid #2563eb;
+        }
+
         /* Custom Scrollbar */
         ::-webkit-scrollbar {
             width: 6px;
@@ -69,57 +74,66 @@
 
     <!-- Chosen Palette: Warm Sand & Professional Blue -->
     <!-- Application Structure Plan: 
-        1. Header: Quick branding and status.
-        2. Live Converter Section: Two-way interactive list. PHP and KRW now both use integer formatting.
-        3. Market Trends Section: Provides context for the PHP/KRW pairing with integer-based data visualization.
-        4. Information Architecture: Designed for clean, simplified consumption of exchange data without decimal noise.
-        5. State Management: Syncs input and maintains integer-only display across all components.
+        1. Navigation: An expanded tabbed interface allowing users to switch between PHP, USD, THB, and VND views.
+        2. Dashboard: Dynamic content update based on the selected tab (4 currencies supported).
+        3. Real-time Logic: Maintains bi-directional calculation for the current view, adapting precision per currency.
+        4. Information Architecture: Unified multi-country view into one seamless SPA for travelers and analysts.
+        5. Justification: Tabbed navigation provides a non-linear exploration path, essential for comparing multiple travel destinations.
     -->
     <!-- Visualization & Content Choices: 
-        - Currency Rows -> Selectable List -> Bi-directional Input -> Real-time conversion -> Integer Display.
-        - Exchange Trends -> Line Chart -> Goal: Trend Analysis -> Rounded Tooltips.
-        - Key Takeaways -> Informational footer blocks.
+        - Multi-View Layout -> Goal: Change & Organize -> Expanded Tab System -> Instant switching between 4 global currencies.
+        - Exchange Trends -> Line Chart -> Goal: Trend Analysis -> Context-aware Chart.js visualization.
         - CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. 
     -->
 
     <div class="max-w-4xl mx-auto px-4 py-8">
-        <!-- 상단 네비게이션 및 헤더 -->
-        <header class="flex justify-between items-center mb-8">
-            <div class="flex items-center space-x-2">
-                <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-xl">₱</div>
-                <h1 class="text-xl font-bold text-gray-800">환율 NOW</h1>
+        <!-- 상단 네비게이션 -->
+        <header class="mb-8">
+            <div class="flex justify-between items-center mb-6">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-xl" id="logo-icon">₱</div>
+                    <h1 class="text-xl font-bold text-gray-800">환율 NOW</h1>
+                </div>
+                <div class="text-xs text-gray-400 font-medium" id="last-updated">
+                    업데이트: 2026년 2월 14일 21:03
+                </div>
             </div>
-            <div class="text-xs text-gray-400 font-medium" id="last-updated">
-                업데이트: 2026년 2월 14일 21:03
-            </div>
+            
+            <!-- 페이지 링크 (탭 형태) -->
+            <nav class="flex border-b border-gray-200 overflow-x-auto whitespace-nowrap scrollbar-hide">
+                <button onclick="switchView('PHP')" id="nav-php" class="nav-tab active px-4 sm:px-6 py-2 font-bold text-sm transition-all">페소 (PHP)</button>
+                <button onclick="switchView('USD')" id="nav-usd" class="nav-tab px-4 sm:px-6 py-2 font-bold text-sm text-gray-400 transition-all">달러 (USD)</button>
+                <button onclick="switchView('THB')" id="nav-thb" class="nav-tab px-4 sm:px-6 py-2 font-bold text-sm text-gray-400 transition-all">바트 (THB)</button>
+                <button onclick="switchView('VND')" id="nav-vnd" class="nav-tab px-4 sm:px-6 py-2 font-bold text-sm text-gray-400 transition-all">동 (VND)</button>
+            </nav>
         </header>
 
         <main class="grid grid-cols-1 lg:grid-cols-12 gap-8">
             
-            <!-- 리포트 섹션 1: 실시간 양방향 계산기 -->
+            <!-- 리포트 섹션 1: 실시간 계산기 -->
             <section class="lg:col-span-5 space-y-6">
                 <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
-                    <h2 class="text-lg font-bold mb-4 px-2">양방향 변환 대시보드</h2>
-                    <p class="text-sm text-gray-500 mb-6 px-2 leading-relaxed">
-                        가독성을 높이기 위해 모든 환율 결과에서 소수점을 제거했습니다. 정수 단위로 빠르고 간편하게 환율을 계산해 보세요.
+                    <h2 class="text-lg font-bold mb-4 px-2" id="dashboard-title">양방향 페소 변환</h2>
+                    <p class="text-sm text-gray-500 mb-6 px-2 leading-relaxed" id="dashboard-desc">
+                        필리핀 페소(PHP)와 한국 원화(KRW) 간의 환율을 계산합니다. 각 행을 선택하여 입력 기준을 바꿀 수 있습니다.
                     </p>
 
                     <!-- 통화 리스트 -->
                     <div class="space-y-3 mb-8" id="currency-list">
-                        <!-- PHP Row -->
-                        <div class="currency-row active flex items-center justify-between p-4 rounded-2xl cursor-pointer bg-gray-50" data-code="PHP">
+                        <!-- Target Currency Row (PHP, USD, THB, or VND) -->
+                        <div id="row-target" class="currency-row active flex items-center justify-between p-4 rounded-2xl cursor-pointer bg-gray-50" data-code="PHP">
                             <div class="flex items-center space-x-3">
-                                <span class="text-2xl">🇵🇭</span>
-                                <span class="font-bold text-gray-700">PHP</span>
+                                <span class="text-2xl" id="target-flag">🇵🇭</span>
+                                <span class="font-bold text-gray-700" id="target-code">PHP</span>
                                 <span class="text-blue-600 text-xs font-bold active-label">입력 중</span>
                             </div>
                             <div class="text-right">
-                                <div class="text-xl font-bold tracking-tight text-blue-600" id="display-PHP">0</div>
+                                <div class="text-xl font-bold tracking-tight text-blue-600" id="display-target">0</div>
                             </div>
                         </div>
 
                         <!-- KRW Row -->
-                        <div class="currency-row flex items-center justify-between p-4 rounded-2xl cursor-pointer bg-gray-50" data-code="KRW">
+                        <div id="row-krw" class="currency-row flex items-center justify-between p-4 rounded-2xl cursor-pointer bg-gray-50" data-code="KRW">
                             <div class="flex items-center space-x-3">
                                 <span class="text-2xl">🇰🇷</span>
                                 <span class="font-bold text-gray-700">KRW</span>
@@ -150,19 +164,18 @@
                         
                         <div class="keypad-button bg-blue-50 text-blue-600 font-bold p-4 rounded-xl text-center cursor-pointer text-xl" data-key="-">−</div>
                         <div class="keypad-button bg-gray-50 text-gray-700 font-medium p-4 rounded-xl text-center cursor-pointer text-xl" data-key="0">0</div>
-                        <!-- Decimal point kept as a placeholder but logic ensures integer results -->
-                        <div class="keypad-button bg-gray-50 text-gray-300 font-medium p-4 rounded-xl text-center cursor-default text-xl font-black" data-key=".">.</div>
+                        <div class="keypad-button bg-gray-50 text-gray-300 font-medium p-4 rounded-xl text-center cursor-default text-xl font-black" id="dot-key" data-key=".">.</div>
                         <div class="keypad-button bg-gray-100 text-gray-600 font-bold p-4 rounded-xl text-center cursor-pointer text-xl" data-key="DEL">⌫</div>
                     </div>
                 </div>
             </section>
 
-            <!-- 리포트 섹션 2: 데이터 시각화 및 인사이트 -->
+            <!-- 리포트 섹션 2: 추세 분석 -->
             <section class="lg:col-span-7 space-y-8">
                 <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 h-full flex flex-col">
-                    <h2 class="text-xl font-bold mb-4">PHP/KRW 시장 동향 분석</h2>
-                    <p class="text-sm text-gray-500 mb-8 leading-relaxed">
-                        시장의 흐름을 직관적으로 파악할 수 있도록 차트 내 수치 데이터도 정수 단위로 최적화되었습니다.
+                    <h2 class="text-xl font-bold mb-4" id="chart-title">PHP/KRW 시장 동향</h2>
+                    <p class="text-sm text-gray-500 mb-8 leading-relaxed" id="chart-desc">
+                        현재 보고 계신 통화의 최근 7일간 변동 추이입니다.
                     </p>
 
                     <div class="flex-grow flex flex-col justify-center">
@@ -185,7 +198,7 @@
                     <div class="mt-6 p-5 border border-blue-50 rounded-2xl bg-blue-50/30">
                         <h4 class="text-sm font-bold text-blue-800 mb-2 font-medium">💡 전문가 리포트</h4>
                         <p class="text-sm text-blue-700/80 leading-relaxed" id="insight-text">
-                            페소화는 필리핀 내수 활성화 기대감에 따라 원화 대비 견조한 흐름을 유지하고 있습니다. 여행 및 비즈니스 목적의 환전 시 현재의 흐름을 참고하십시오.
+                            분석 데이터를 불러오고 있습니다.
                         </p>
                     </div>
                 </div>
@@ -202,44 +215,95 @@
     <script>
         // State Management
         const state = {
-            activeCurrency: 'PHP',
+            view: 'PHP', 
+            activeCurrency: 'PHP', 
             inputValue: '0', 
-            baseToKRW: {
-                PHP: 24.9075,
-                KRW: 1
+            rates: {
+                PHP: 24.91,
+                USD: 1442.50,
+                THB: 39.75,
+                VND: 0.056
             }
         };
 
-        // UI Logic
+        const viewConfig = {
+            PHP: {
+                title: '양방향 페소 변환',
+                desc: '필리핀 페소(PHP)와 한국 원화(KRW) 간의 환율을 계산합니다.',
+                flag: '🇵🇭',
+                code: 'PHP',
+                logo: '₱',
+                chartTitle: 'PHP/KRW 시장 동향',
+                precision: 0, 
+                data: [24.81, 24.85, 24.98, 24.92, 24.88, 24.94, 24.91],
+                insight: '페소화는 필리핀 내수 활성화 기대감에 따라 원화 대비 견조한 흐름을 유지하고 있습니다.'
+            },
+            USD: {
+                title: '양방향 달러 변환',
+                desc: '미국 달러(USD)와 한국 원화(KRW) 간의 환율을 계산합니다.',
+                flag: '🇺🇸',
+                code: 'USD',
+                logo: '$',
+                chartTitle: 'USD/KRW 시장 동향',
+                precision: 2,
+                data: [1439.5, 1441.2, 1445.8, 1443.1, 1442.4, 1444.2, 1442.5],
+                insight: '달러화는 글로벌 금리 정책 변동성에 따라 원화 대비 변동폭이 확대되는 추세입니다.'
+            },
+            THB: {
+                title: '양방향 바트 변환',
+                desc: '태국 바트(THB)와 한국 원화(KRW) 간의 환율을 계산합니다.',
+                flag: '🇹🇭',
+                code: 'THB',
+                logo: '฿',
+                chartTitle: 'THB/KRW 시장 동향',
+                precision: 1,
+                data: [39.4, 39.5, 39.8, 39.7, 39.6, 39.8, 39.75],
+                insight: '바트화는 관광 산업 회복세와 물가 안정화 노력에 힘입어 점진적인 강세를 나타내고 있습니다.'
+            },
+            VND: {
+                title: '양방향 동 변환',
+                desc: '베트남 동(VND)과 한국 원화(KRW) 간의 환율을 계산합니다.',
+                flag: '🇻🇳',
+                code: 'VND',
+                logo: '₫',
+                chartTitle: 'VND/KRW 시장 동향',
+                precision: 0,
+                data: [0.054, 0.055, 0.057, 0.056, 0.055, 0.056, 0.056],
+                insight: '동화는 베트남의 수출 호조와 외국인 직접 투자 유입으로 인해 안정적인 수준을 유지하고 있습니다.'
+            }
+        };
+
         const displays = {
             KRW: document.getElementById('display-KRW'),
-            PHP: document.getElementById('display-PHP')
+            target: document.getElementById('display-target')
         };
 
         const updateCalculations = () => {
             const currentAmount = parseFloat(state.inputValue) || 0;
-            const fromCode = state.activeCurrency;
+            const config = viewConfig[state.view];
+            const rate = state.rates[state.view];
             
-            // Convert current input to KRW first
-            const amountInKRW = currentAmount * state.baseToKRW[fromCode];
+            let targetValue, krwValue;
 
-            // Update all displays to integers (precision: 0)
-            Object.keys(displays).forEach(code => {
-                const result = amountInKRW / state.baseToKRW[code];
-                
-                // All currencies now integer
-                const precision = 0;
-                
-                const formatter = new Intl.NumberFormat('ko-KR', {
-                    minimumFractionDigits: precision,
-                    maximumFractionDigits: precision
-                });
-                displays[code].textContent = formatter.format(Math.round(result));
-            });
+            if (state.activeCurrency === 'KRW') {
+                krwValue = currentAmount;
+                targetValue = currentAmount / rate;
+            } else {
+                targetValue = currentAmount;
+                krwValue = currentAmount * rate;
+            }
+
+            const targetPrecision = config.precision;
+            const krwFormatter = new Intl.NumberFormat('ko-KR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+            const targetFormatter = new Intl.NumberFormat('ko-KR', { minimumFractionDigits: targetPrecision, maximumFractionDigits: targetPrecision });
+
+            displays.KRW.textContent = krwFormatter.format(Math.round(krwValue));
+            displays.target.textContent = targetFormatter.format(targetValue);
         };
 
         const updateVisualActiveState = () => {
-            document.querySelectorAll('.currency-row').forEach(row => {
+            const rows = [document.getElementById('row-target'), document.getElementById('row-krw')];
+            rows.forEach(row => {
                 const code = row.getAttribute('data-code');
                 const label = row.querySelector('.active-label');
                 const display = row.querySelector('div[id^="display-"]');
@@ -258,17 +322,63 @@
             });
         };
 
-        // Keypad Interaction
+        const switchView = (viewCode) => {
+            state.view = viewCode;
+            state.activeCurrency = viewCode;
+            state.inputValue = '0';
+            
+            const config = viewConfig[viewCode];
+            
+            // Update Navigation Tabs
+            ['php', 'usd', 'thb', 'vnd'].forEach(c => {
+                const el = document.getElementById(`nav-${c}`);
+                if (c === viewCode.toLowerCase()) {
+                    el.className = 'nav-tab active px-4 sm:px-6 py-2 font-bold text-sm transition-all';
+                } else {
+                    el.className = 'nav-tab px-4 sm:px-6 py-2 font-bold text-sm text-gray-400 transition-all';
+                }
+            });
+            
+            document.getElementById('logo-icon').textContent = config.logo;
+            document.getElementById('dashboard-title').textContent = config.title;
+            document.getElementById('dashboard-desc').textContent = config.desc;
+            document.getElementById('target-flag').textContent = config.flag;
+            document.getElementById('target-code').textContent = config.code;
+            document.getElementById('row-target').setAttribute('data-code', config.code);
+            
+            document.getElementById('chart-title').textContent = config.chartTitle;
+            document.getElementById('insight-text').textContent = config.insight;
+
+            const dotKey = document.getElementById('dot-key');
+            if (config.precision > 0) {
+                dotKey.classList.remove('text-gray-300', 'cursor-default');
+                dotKey.classList.add('text-gray-700', 'cursor-pointer');
+            } else {
+                dotKey.classList.add('text-gray-300', 'cursor-default');
+                dotKey.classList.remove('text-gray-700', 'cursor-pointer');
+            }
+
+            updateVisualActiveState();
+            updateCalculations();
+            initChart();
+        };
+
         document.querySelectorAll('.keypad-button').forEach(btn => {
             btn.addEventListener('click', () => {
                 const key = btn.getAttribute('data-key');
-                if (!key || key === '.') return; // Ignore decimal point logic as we want integers
+                if (!key) return;
+                
+                if (key === '.' && viewConfig[state.view].precision === 0) return;
 
                 if (key === 'C') {
                     state.inputValue = '0';
                 } else if (key === 'DEL') {
                     state.inputValue = state.inputValue.toString().slice(0, -1) || '0';
                     if (state.inputValue === '') state.inputValue = '0';
+                } else if (key === '.') {
+                    if (!state.inputValue.toString().includes('.')) {
+                        state.inputValue += '.';
+                    }
                 } else if (!isNaN(key)) {
                     if (state.inputValue === '0') {
                         state.inputValue = key;
@@ -276,62 +386,44 @@
                         state.inputValue += key;
                     }
                 }
-                
                 updateCalculations();
             });
         });
 
-        // Row Selection
-        document.querySelectorAll('.currency-row').forEach(row => {
+        [document.getElementById('row-target'), document.getElementById('row-krw')].forEach(row => {
             row.addEventListener('click', () => {
                 state.activeCurrency = row.getAttribute('data-code');
-                
-                // Set input to current row value (stripped of commas)
-                const rawVal = displays[state.activeCurrency].textContent.replace(/,/g, '');
-                state.inputValue = rawVal;
-                
+                const displayId = state.activeCurrency === 'KRW' ? 'display-KRW' : 'display-target';
+                state.inputValue = document.getElementById(displayId).textContent.replace(/,/g, '');
                 updateVisualActiveState();
                 updateCalculations();
             });
         });
 
-        // Chart.js Visualization
         let currentChart;
         const ctx = document.getElementById('trendsChart').getContext('2d');
 
-        const chartData = {
-            'PHP-KRW': {
-                labels: ['02/08', '02/09', '02/10', '02/11', '02/12', '02/13', '02/14'],
-                data: [24.81, 24.85, 24.98, 24.92, 24.88, 24.94, 24.91],
-                label: 'PHP/KRW 환율',
-                color: '#2563eb',
-                insight: '페소화는 필리핀 내수 활성화 기대감에 따라 원화 대비 견조한 흐름을 유지 중입니다.'
-            }
-        };
-
         const initChart = () => {
             if (currentChart) currentChart.destroy();
-            
-            const config = chartData['PHP-KRW'];
+            const config = viewConfig[state.view];
             const maxVal = Math.max(...config.data);
             const minVal = Math.min(...config.data);
             
-            document.getElementById('stat-high').textContent = Math.round(maxVal).toLocaleString() + ' ₩';
-            document.getElementById('stat-low').textContent = Math.round(minVal).toLocaleString() + ' ₩';
+            document.getElementById('stat-high').textContent = maxVal.toLocaleString() + ' ₩';
+            document.getElementById('stat-low').textContent = minVal.toLocaleString() + ' ₩';
 
             currentChart = new Chart(ctx, {
                 type: 'line',
                 data: {
-                    labels: config.labels,
+                    labels: ['02/12', '02/13', '02/14', '02/15', '02/16', '02/17', '02/18'],
                     datasets: [{
-                        label: config.label,
+                        label: config.code + '/KRW',
                         data: config.data,
-                        borderColor: config.color,
-                        backgroundColor: config.color + '1a',
+                        borderColor: '#2563eb',
+                        backgroundColor: '#2563eb1a',
                         fill: true,
                         tension: 0.4,
                         pointRadius: 4,
-                        pointBackgroundColor: config.color,
                         borderWidth: 3
                     }]
                 },
@@ -341,49 +433,20 @@
                     plugins: {
                         legend: { display: false },
                         tooltip: {
-                            mode: 'index',
-                            intersect: false,
-                            padding: 12,
-                            backgroundColor: '#fff',
-                            titleColor: '#1f2937',
-                            bodyColor: '#4b5563',
-                            borderColor: '#e5e7eb',
-                            borderWidth: 1,
                             callbacks: {
-                                // Round tooltip values
-                                label: (context) => ` 환율: ${Math.round(context.parsed.y).toLocaleString()} ₩`
+                                label: (ctx) => ` 환율: ${ctx.parsed.y.toLocaleString()} ₩`
                             }
                         }
                     },
                     scales: {
-                        y: {
-                            beginAtZero: false,
-                            grid: { color: '#f3f4f6' },
-                            ticks: { 
-                                color: '#9ca3af',
-                                font: { size: 10 },
-                                callback: (value) => Math.round(value).toLocaleString()
-                            }
-                        },
-                        x: {
-                            grid: { display: false },
-                            ticks: { 
-                                color: '#9ca3af',
-                                font: { size: 10 }
-                            }
-                        }
+                        y: { ticks: { font: { size: 10 } } },
+                        x: { grid: { display: false }, ticks: { font: { size: 10 } } }
                     }
                 }
             });
         };
 
-        // Initialize
-        window.onload = () => {
-            state.inputValue = '0';
-            updateVisualActiveState();
-            updateCalculations();
-            initChart();
-        };
+        window.onload = () => switchView('PHP');
     </script>
 </body>
 </html>
