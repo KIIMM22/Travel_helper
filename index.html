@@ -85,9 +85,9 @@
 
     <!-- 애플리케이션 구조 계획: 
         1. 네비게이션: PHP, USD, THB, VND 탭 메뉴.
-        2. 대시보드: "교차환율" 개념을 적용한 양방향 계산기.
-        3. 실시간 로직: 글로벌 데이터를 VND 100단위 기준으로 정규화하여 처리.
-        4. 정보 아키텍처: 고정된 안내 문구를 유지하며 환율 및 차트 정보를 탐색 가능하게 함.
+        2. 대시보드: 선택된 통화별 제목 표시 및 설명 제거.
+        3. 실시간 로직: 소수점 입력을 허용하고 계산 정밀도를 소수점 2자리로 확장.
+        4. 정보 아키텍처: 불필요한 텍스트를 제거하고 입력 데이터에 집중할 수 있는 레이아웃.
     -->
 
     <div class="max-w-4xl mx-auto px-4 py-8">
@@ -117,11 +117,9 @@
             <!-- 리포트 섹션 1: 실시간 교차환율 계산기 -->
             <section class="lg:col-span-5 space-y-6">
                 <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
-                    <h2 class="text-lg font-bold mb-4 px-2" id="dashboard-title">교차환율 리포트</h2>
-                    <p class="text-sm text-gray-500 mb-6 px-2 leading-relaxed" id="dashboard-desc">
-                        글로벌 실시간 데이터를 기반으로 산출된 교차환율입니다.
-                    </p>
-
+                    <!-- 요청 사항 1: 제목 수정 및 설명 삭제 -->
+                    <h2 class="text-lg font-bold mb-4 px-2" id="dashboard-title">PHP 환율</h2>
+                    
                     <!-- 통화 리스트 -->
                     <div class="space-y-3 mb-8" id="currency-list">
                         <!-- 타겟 통화 행 -->
@@ -174,7 +172,8 @@
                         <div class="keypad-button bg-blue-600 text-white font-bold p-4 rounded-xl text-center cursor-pointer text-xl row-span-2 flex items-center justify-center" data-key="=">=</div>
 
                         <div class="keypad-button bg-gray-50 text-gray-700 font-medium p-4 rounded-xl text-center cursor-pointer text-xl col-span-2" data-key="0">0</div>
-                        <div class="keypad-button bg-gray-50 text-gray-300 font-medium p-4 rounded-xl text-center cursor-default text-xl font-black" id="dot-key" data-key=".">.</div>
+                        <!-- 요청 사항 2: 소수점 입력 가능하게 수정 -->
+                        <div class="keypad-button bg-gray-50 text-gray-700 font-medium p-4 rounded-xl text-center cursor-pointer text-xl font-black" id="dot-key" data-key=".">.</div>
                     </div>
                 </div>
             </section>
@@ -283,6 +282,10 @@
             }
         };
 
+        /**
+         * 입력값에 따른 환산 결과를 업데이트합니다.
+         * 요청사항 반영: 소수점 표시를 위해 minimum/maximum fraction digits 조정
+         */
         const updateCalculations = () => {
             let resultValue = safeEval(state.inputValue);
             if (resultValue === null) return;
@@ -304,15 +307,14 @@
                 displays.exprKRW.textContent = '';
             }
 
-            const formatter = new Intl.NumberFormat('ko-KR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-            const finalKrw = Math.round(krwValue);
-            const finalTarget = Math.round(targetValue);
+            // 소수점 둘째 자리까지 표시
+            const formatter = new Intl.NumberFormat('ko-KR', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 
-            displays.KRW.textContent = formatter.format(finalKrw);
-            displays.target.textContent = formatter.format(finalTarget);
+            displays.KRW.textContent = formatter.format(krwValue);
+            displays.target.textContent = formatter.format(targetValue);
 
-            adjustFontSize(displays.KRW, finalKrw.toString().length);
-            adjustFontSize(displays.target, finalTarget.toString().length);
+            adjustFontSize(displays.KRW, krwValue.toString().length);
+            adjustFontSize(displays.target, targetValue.toString().length);
         };
 
         const adjustFontSize = (el, length) => {
@@ -356,7 +358,9 @@
             document.getElementById('logo-icon').textContent = config.logo;
             document.getElementById('target-flag').textContent = config.flag;
             document.getElementById('target-code-display').textContent = config.code;
-            document.getElementById('dashboard-title').textContent = `교차환율 리포트 (${config.code})`;
+            
+            // 요청 사항 1: 제목 수정
+            document.getElementById('dashboard-title').textContent = `${config.code} 환율`;
             document.getElementById('chart-title').textContent = `${config.code}/KRW 추세 분석`;
 
             updateVisualActiveState();
@@ -364,16 +368,17 @@
             initChart();
         };
 
+        // 키패드 입력 처리
         document.querySelectorAll('.keypad-button').forEach(btn => {
             btn.addEventListener('click', () => {
                 const key = btn.getAttribute('data-key');
-                if (!key || key === '.') return;
+                if (!key) return;
 
                 if (key === 'C') {
                     state.inputValue = '0';
                 } else if (key === '=') {
                     const result = safeEval(state.inputValue);
-                    if (result !== null) state.inputValue = Math.round(result).toString();
+                    if (result !== null) state.inputValue = result.toString();
                 } else if (key === 'DEL') {
                     state.inputValue = state.inputValue.toString().slice(0, -1) || '0';
                     if (state.inputValue === '') state.inputValue = '0';
@@ -384,6 +389,12 @@
                     } else {
                         state.inputValue += key;
                     }
+                } else if (key === '.') {
+                    // 요청 사항 2: 소수점 입력 로직 복구
+                    const parts = state.inputValue.split(/[+\-*/]/);
+                    if (!parts[parts.length - 1].includes('.')) {
+                        state.inputValue += '.';
+                    }
                 } else if (!isNaN(key)) {
                     if (state.inputValue === '0') state.inputValue = key;
                     else state.inputValue += key;
@@ -392,12 +403,15 @@
             });
         });
 
+        // 행 클릭 시 입력 대상 전환
         [document.getElementById('row-target'), document.getElementById('row-krw')].forEach(row => {
             row.addEventListener('click', () => {
                 const rowCode = row.getAttribute('data-code');
                 state.activeCurrency = (rowCode === 'KRW') ? 'KRW' : state.view;
+                
                 const displayId = (state.activeCurrency === 'KRW') ? 'display-KRW' : 'display-target';
                 state.inputValue = document.getElementById(displayId).textContent.replace(/,/g, '');
+                
                 updateVisualActiveState();
                 updateCalculations();
             });
@@ -408,6 +422,7 @@
             if (currentChart) currentChart.destroy();
             const config = viewConfig[state.view];
             const currentRate = state.rates[state.view];
+            
             const dynamicData = config.data.map((v, i) => (currentRate * (0.985 + (Math.random() * 0.03))));
 
             document.getElementById('stat-high').textContent = Math.max(...dynamicData).toLocaleString(undefined, {maximumFractionDigits: 2}) + ' ₩';
