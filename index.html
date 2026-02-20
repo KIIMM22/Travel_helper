@@ -2,8 +2,19 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>환율 NOW - 인터랙티브 리포트</title>
+    
+    <!-- iOS PWA Meta Tags -->
+    <!-- 홈 화면 추가 시 표시될 아이콘 설정 -->
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/263/263142.png">
+    <!-- 웹앱으로 작동하도록 설정 (주소창 숨김) -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <!-- 상태 표시줄 스타일 설정 -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <!-- 홈 화면에 표시될 앱 이름 -->
+    <meta name="apple-mobile-web-app-title" content="환율 NOW">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -13,6 +24,7 @@
             font-family: 'Noto+Sans+KR', sans-serif;
             background-color: #faf9f6; 
             color: #2d2d2d;
+            padding-top: env(safe-area-inset-top); /* iOS Notch 지원 */
         }
 
         .chart-container {
@@ -84,10 +96,10 @@
 <body class="antialiased">
 
     <!-- 애플리케이션 구조 계획: 
-        1. 네비게이션: PHP, USD, THB, VND 탭 메뉴.
-        2. 대시보드: 선택된 통화별 제목 표시 및 설명 제거.
-        3. 실시간 로직: 소수점 입력을 허용하고 계산 정밀도를 소수점 2자리로 확장.
-        4. 정보 아키텍처: 불필요한 텍스트를 제거하고 입력 데이터에 집중할 수 있는 레이아웃.
+        1. 메타 데이터: iOS 홈 화면 아이콘 및 PWA 최적화 유지.
+        2. 네비게이션: PHP, USD, THB, VND 탭 메뉴 유지.
+        3. 대시보드: 요청에 따라 설명 문구를 제거하여 데이터 중심의 레이아웃으로 변경.
+        4. 실시간 로직: 소수점 입력을 포함한 사칙연산 계산기 및 실시간 데이터 연동 유지.
     -->
 
     <div class="max-w-4xl mx-auto px-4 py-8">
@@ -117,9 +129,10 @@
             <!-- 리포트 섹션 1: 실시간 교차환율 계산기 -->
             <section class="lg:col-span-5 space-y-6">
                 <div class="bg-white rounded-3xl shadow-sm border border-gray-100 p-6">
-                    <!-- 요청 사항 1: 제목 수정 및 설명 삭제 -->
                     <h2 class="text-lg font-bold mb-4 px-2" id="dashboard-title">PHP 환율</h2>
                     
+                    <!-- 설명 문구 삭제됨 -->
+
                     <!-- 통화 리스트 -->
                     <div class="space-y-3 mb-8" id="currency-list">
                         <!-- 타겟 통화 행 -->
@@ -172,7 +185,6 @@
                         <div class="keypad-button bg-blue-600 text-white font-bold p-4 rounded-xl text-center cursor-pointer text-xl row-span-2 flex items-center justify-center" data-key="=">=</div>
 
                         <div class="keypad-button bg-gray-50 text-gray-700 font-medium p-4 rounded-xl text-center cursor-pointer text-xl col-span-2" data-key="0">0</div>
-                        <!-- 요청 사항 2: 소수점 입력 가능하게 수정 -->
                         <div class="keypad-button bg-gray-50 text-gray-700 font-medium p-4 rounded-xl text-center cursor-pointer text-xl font-black" id="dot-key" data-key=".">.</div>
                     </div>
                 </div>
@@ -282,10 +294,6 @@
             }
         };
 
-        /**
-         * 입력값에 따른 환산 결과를 업데이트합니다.
-         * 요청사항 반영: 소수점 표시를 위해 minimum/maximum fraction digits 조정
-         */
         const updateCalculations = () => {
             let resultValue = safeEval(state.inputValue);
             if (resultValue === null) return;
@@ -307,7 +315,6 @@
                 displays.exprKRW.textContent = '';
             }
 
-            // 소수점 둘째 자리까지 표시
             const formatter = new Intl.NumberFormat('ko-KR', { minimumFractionDigits: 0, maximumFractionDigits: 2 });
 
             displays.KRW.textContent = formatter.format(krwValue);
@@ -358,8 +365,6 @@
             document.getElementById('logo-icon').textContent = config.logo;
             document.getElementById('target-flag').textContent = config.flag;
             document.getElementById('target-code-display').textContent = config.code;
-            
-            // 요청 사항 1: 제목 수정
             document.getElementById('dashboard-title').textContent = `${config.code} 환율`;
             document.getElementById('chart-title').textContent = `${config.code}/KRW 추세 분석`;
 
@@ -368,7 +373,6 @@
             initChart();
         };
 
-        // 키패드 입력 처리
         document.querySelectorAll('.keypad-button').forEach(btn => {
             btn.addEventListener('click', () => {
                 const key = btn.getAttribute('data-key');
@@ -390,7 +394,6 @@
                         state.inputValue += key;
                     }
                 } else if (key === '.') {
-                    // 요청 사항 2: 소수점 입력 로직 복구
                     const parts = state.inputValue.split(/[+\-*/]/);
                     if (!parts[parts.length - 1].includes('.')) {
                         state.inputValue += '.';
@@ -403,15 +406,12 @@
             });
         });
 
-        // 행 클릭 시 입력 대상 전환
         [document.getElementById('row-target'), document.getElementById('row-krw')].forEach(row => {
             row.addEventListener('click', () => {
                 const rowCode = row.getAttribute('data-code');
                 state.activeCurrency = (rowCode === 'KRW') ? 'KRW' : state.view;
-                
                 const displayId = (state.activeCurrency === 'KRW') ? 'display-KRW' : 'display-target';
                 state.inputValue = document.getElementById(displayId).textContent.replace(/,/g, '');
-                
                 updateVisualActiveState();
                 updateCalculations();
             });
@@ -422,7 +422,6 @@
             if (currentChart) currentChart.destroy();
             const config = viewConfig[state.view];
             const currentRate = state.rates[state.view];
-            
             const dynamicData = config.data.map((v, i) => (currentRate * (0.985 + (Math.random() * 0.03))));
 
             document.getElementById('stat-high').textContent = Math.max(...dynamicData).toLocaleString(undefined, {maximumFractionDigits: 2}) + ' ₩';
